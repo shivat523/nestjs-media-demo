@@ -1,0 +1,50 @@
+name: NestJS CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sonarqube:
+    name: SonarQube Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  deploy:
+    name: Deploy to EC2
+    needs: sonarqube 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute Remote SSH Commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Navigate to your NestJS project folder
+            cd /home/ubuntu/nestjs-media-demo
+            
+            # Pull the latest code
+            git pull origin main
+            
+            # Install dependencies and build
+            npm install
+            npm run build
+            
+            # Restart the PM2 process if it exists, otherwise start it
+            pm2 restart nest-api || pm2 start dist/main.js --name "nest-api"
+            
+            # Save PM2 state for server reboots
+            pm2 save
