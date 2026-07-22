@@ -34,7 +34,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             # Navigate to your NestJS project folder
-            cd /home/ubuntu/nestjs-media-demo
+            cd /home/ubuntu/nestjs-media-demo2
             
             # Pull the latest code
             git pull origin main
